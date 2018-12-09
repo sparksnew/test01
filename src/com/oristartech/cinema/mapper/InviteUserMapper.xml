@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.InviteUserMapper">
+    <!-- 获取邀请码的信息 -->
+    <select id="getFcodeInfo" parameterMap="inputFcode" statementType="CALLABLE" resultType="java.util.Map">
+       CALL getFcodeInfo(?)
+    </select>
+    <parameterMap id="inputFcode" type="java.util.Map">
+       <parameter property="fcode" mode="IN" jdbcType="VARCHAR"/>
+    </parameterMap>
+    <!-- 查询手机号是否存在 -->
+    <select id="checkPhoneExit" parameterType="java.util.Map" resultType="Integer">
+       select count(*) as count from users where status="1" and mobile = #{phone}
+    </select>
+    <!-- 注册手机用户 -->
+    <select id="submitAccount" parameterMap="inputUser" statementType="CALLABLE" resultType="Integer">
+       CALL registeUser(?,?,?,?,?,?,?,?,?,?)
+    </select>
+    <parameterMap type="java.util.Map" id="inputUser">
+       <parameter property="customerID" mode="IN" jdbcType="INTEGER"/>
+       <parameter property="roleID" mode="IN" jdbcType="INTEGER"/>
+       <parameter property="mobile" mode="IN" jdbcType="VARCHAR"/>
+       <parameter property="passWord" mode="IN" jdbcType="VARCHAR"/>
+       <parameter property="userName" mode="IN" jdbcType="VARCHAR"/>
+       <parameter property="cinemaID" mode="IN" jdbcType="INTEGER"/>
+       <parameter property="fCode" mode="IN" jdbcType="VARCHAR"/>
+       <parameter property="invitationID" mode="IN" jdbcType="INTEGER"/>
+       <parameter property="uID" mode="IN" jdbcType="INTEGER"/>
+       <parameter property="date" mode="IN" jdbcType="VARCHAR"/>
+    </parameterMap>
+</mapper>

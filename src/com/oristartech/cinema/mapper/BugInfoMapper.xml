@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.BugInfoMapper">
+	<select id="queryBugInfo" resultType="java.util.Map">
+	SELECT A.PROJECTID,
+		 A.BUGID,
+		 A.BUGTITLE,
+		 (SELECT (case when S.PROGRESSSTATUSNAME='处理完成待确认' then '处理完成' else S.PROGRESSSTATUSNAME end) as PROGRESSSTATUSNAME  FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') as TRANSITIONNAME,
+		 CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ( '服务台受理','服务台待响应') THEN '待处理' 
+		 WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '处理中'  END AS PROGRESSSTATUSNAME,
+		 CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '未完成'  END AS PROGRESSSTATUSNAME1,
+		 A.CUSTOMERID, B.BUGDESCRIPTION, A.EvaluationValueID,A.EvaluationComments,
+		 SUBSTRING(CONVERT(varchar(50), b.DateAssigned, 111),6,5) +' '+SUBSTRING(CONVERT(varchar(100), b.DateAssigned, 13),11,6) as DATEASSIGNED FROM BUG A INNER JOIN (SELECT *
+		 FROM ( SELECT *,ROW_NUMBER() OVER(PARTITION BY BUGID ORDER BY SEQUENCENO DESC) RN  FROM BUGTRACKING  where ProjectID = 192 ) T
+		 WHERE T.RN &lt;=1 AND T.PROJECTID = '192') B ON A.PROJECTID = B.PROJECTID AND A.BUGID = B.BUGID AND A.PROJECTID = '192' AND  A.CUSTOMERID =
+		 #{theaterId}
+		 <if test="''!=deviceId and deviceId !=null">
+	 	  AND  A.BUGID in (select link.IncidentID from IncidentAssetLinks link where link.LinkedAssetID =#{deviceId})
+		 </if>
+		  order by PROGRESSSTATUSNAME1 ASC,b.DateAssigned DESC
+	</select>
+	<select id="queryBugTrace" resultType="java.util.Map">
+		SELECT ISNULL((SELECT (case when S.PROGRESSSTATUSNAME='关闭' then '处理完成' else S.PROGRESSSTATUSNAME end) as PROGRESSSTATUSNAME 
+		FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID =G.PROGRESSSTATUSID AND S.PROJECTID= '192'),'') as TRANSITIONNAME, 
+		 SUBSTRING(CONVERT(VARCHAR(50), G.DATEASSIGNED, 111),6,5) +' '+SUBSTRING(CONVERT(VARCHAR(100), G.DATEASSIGNED, 13),11,6) AS DATEASSIGNED,
+		 G.SEQUENCENO FROM BUGTRACKING G WHERE G.PROJECTID = 192 AND <![CDATA[G.BUGID =#{bugID} and SequenceNo<>1]]> ORDER BY G.SEQUENCENO DESC
+	</select>	
+	<select id="queryBugStatus" resultType="java.util.Map">
+		SELECT A.BugTitle,A.ProblemDescription,CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID =A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ( '服务台受理','服务台待响应') THEN '待处理' 
+		WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '处理中'  END AS PROGRESSSTATUSNAME,A.DateCreated,A.EvaluationComments,A.EvaluationValueID from Bug A where A.BugID = 
+		#{bugID} and A.ProjectID = 192
+	</select>	
+	<select id="queryBugDetail" resultType="java.util.Map">
+		select bugID,BigUrl,SmUrl from image where BugID=#{bugID} order by InsertDate
+	</select>	
+	<select id="queryBugDesc" resultType="java.util.Map">
+		SELECT  ProblemDescription from bug where ProjectId = 192 and bugID = #{bugID}
+	</select>
+	<update id="updatemDesc">
+	UPDATE Bug set ProblemDescription = #{desc} WHERE bugID = #{bugID} and ProjectID = 192
+	</update>	
+	<select id="selectDesc" resultType="java.lang.Integer">
+	  select count(1) as num from bug where bugID = #{bugID} and ProjectID = 192
+	</select>
+	<insert id="addImg">
+		insert into image(BugID,BigUrl,SmUrl) values(#{bugID},#{tomcatBigUrl}, #{tomcatSmUrl})
+	</insert>
+	<update id="editTrouble">
+		UPDATE Bug set EvaluationComments = #{remark},EvaluationValueID= #{evaluate} WHERE bugID = #{bugID} and ProjectID = 192
+	</update>
+	<select id="queryTroubleEdit" resultType="java.lang.Integer">
+		select count(1) as num from Bug where bugID = #{bugID} and ProjectID = 192
+	</select>
+	<insert id="addUserBugs">
+		insert into userbugs (UserID,BugID,type) VALUES (#{userID},#{indentID},#{type})
+	</insert>
+	<select id="getTheaterInfoByDeviceCode" resultType="java.util.Map">
+		select t.ProjectID,t.ItemID,t.Name,t.AssetNo,t.Description,t.Field1,t.Field7,c.CustomerID,c.CustomerNo,c.CompanyName
+		from AssetItem t,Customers c where (t.CurrentUser=c.CustomerID or t.OwnershipStatusID=c.CustomerID) and rtrim(ltrim(t.Field7))= '${deviceCode}'
+	</select>
+	<select id="getBugIDByUserID" resultType="java.util.Map">
+		select BugID from userbugs where UserID= #{userID} and type=0
+	</select>
+	<select id="getUnsignBugList" resultType="java.util.Map">
+		SELECT A.PROJECTID,
+		 A.BUGID,
+		 A.BUGTITLE,
+		 (select c.CompanyName from Customers c where A.CUSTOMERID=c.CustomerID) as CUSTOMERNAME,
+		 CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('服务台受理','服务台待响应') THEN '待处理' 
+		 WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '处理中'  END AS PROGRESSSTATUSNAME,
+		CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '未完成'  END AS PROGRESSSTATUSNAME1,
+		 A.CUSTOMERID, 
+		 B.BUGDESCRIPTION,
+		 A.EvaluationValueID,
+		 A.EvaluationComments,
+		 SUBSTRING(CONVERT(varchar(50), b.DateAssigned, 111),6,5) +' '+SUBSTRING(CONVERT(varchar(100), b.DateAssigned, 13),11,6) as DATEASSIGNED ,
+		 (case when (SELECT S.TRANSITIONNAME  FROM TRANSITIONS S WHERE S.PROJECTID = '192' AND S.TRANSITIONID = B.TRANSITIONID)  IS null then '400电话或其他故障' else (SELECT S.TRANSITIONNAME  FROM TRANSITIONS S WHERE S.PROJECTID = '192' AND S.TRANSITIONID = B.TRANSITIONID) end)  as TRANSITIONNAME
+		 FROM BUG A INNER JOIN (SELECT *  FROM ( SELECT *,ROW_NUMBER() OVER(PARTITION BY BUGID ORDER BY SEQUENCENO DESC) RN  FROM BUGTRACKING  where ProjectID = 192 ) T 
+		                         WHERE T.RN &lt;=1 AND T.PROJECTID = '192') B ON A.PROJECTID = B.PROJECTID 
+		                          AND A.BUGID = B.BUGID AND A.PROJECTID = '192' AND  A.BUGID in (${bugIDs})
+		order by PROGRESSSTATUSNAME1 ASC,b.DateAssigned DESC
+	</select>
+</mapper>

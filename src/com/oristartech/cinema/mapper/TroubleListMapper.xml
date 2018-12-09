@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.TroubleListMapper">
+	<select id="queryTroubleListByCustomerID" resultType="java.util.Map">
+	SELECT A.PROJECTID,A.BUGID,A.BUGTITLE,  
+     CASE WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ( '服务台受理','服务台待响应') THEN '待处理'   
+          WHEN (SELECT S.PROGRESSSTATUSNAME FROM PROGRESSSTATUSTYPES S WHERE S.PROGRESSSTATUSID = A.PROGRESSSTATUSID AND S.PROJECTID= '192') in ('关闭','处理完成待确认') THEN '已完成' ELSE '处理中'  END AS PROGRESSSTATUSNAME,  
+       A.CUSTOMERID,B.BUGDESCRIPTION,A.EvaluationValueID,A.EvaluationComments,SUBSTRING(CONVERT(varchar(50), b.DateAssigned, 111),6,5) +' '+SUBSTRING(CONVERT(varchar(100), b.DateAssigned, 13),11,6) as DATEASSIGNED ,  
+    (case when (SELECT S.TRANSITIONNAME  FROM TRANSITIONS S WHERE S.PROJECTID = '192' AND S.TRANSITIONID = B.TRANSITIONID)  IS null then '400电话或其他故障' else (SELECT S.TRANSITIONNAME  FROM TRANSITIONS S WHERE S.PROJECTID = '192' AND S.TRANSITIONID = B.TRANSITIONID) end)  as TRANSITIONNAME  
+FROM BUG A INNER JOIN (SELECT * FROM ( SELECT *,ROW_NUMBER() OVER(PARTITION BY BUGID ORDER BY SEQUENCENO DESC) RN  FROM BUGTRACKING  where ProjectID = 192 ) T   
+WHERE T.RN &lt;=1 AND T.PROJECTID = '192') B ON A.PROJECTID = B.PROJECTID AND A.BUGID = B.BUGID AND A.PROJECTID = '192' AND A.CUSTOMERID = #{theaterId} AND A.ProgressStatusID != 17 order by b.DateAssigned desc
+	</select>
+	<select id="queryFlag" resultType="java.lang.String">
+	select case when WarranteeTo>getdate() then '1' else '0' end as flag from AssetItemValueFields x,AssetItem y where x.projectid=y.projectid and x.itemid=y.itemid and x.itemid=#{deviceID}
+	</select>
+	<select id="queryBugId" resultType="java.util.Map">
+	SELECT BugID from Bug where DateCreated = #{datetimes}
+	</select>
+	<insert id="insertIncidentAssetLinks">
+	insert into IncidentAssetLinks(ProjectID,IncidentID,LinkedProjectID,LinkedAssetID) values(#{projectID},#{incidentID},#{linkedProjectID},#{linkedAssetID})
+	</insert>
+</mapper>

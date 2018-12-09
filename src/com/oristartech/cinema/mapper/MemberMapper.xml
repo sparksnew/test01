@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.MemberMapper">
+	<select id="queryMemberInfo" resultType="java.util.Map">
+		select
+		dw.MEMBER_CLASS_NAME,
+		IF(dw.TOTAL_MEMBER_NUM IS NULL,0,dw.TOTAL_MEMBER_NUM) as TOTAL_MEMBER_NUM,
+		IF(dw.ADD_MEMBER_NUM IS NULL,0,dw.ADD_MEMBER_NUM) as ADD_MEMBER_NUM,
+		IF(dw.SALE_ORDER_TOTAL IS NULL,0,dw.SALE_ORDER_TOTAL) as
+		SALE_ORDER_TOTAL,
+		IF(dw.RECHARGE_AMOUNT IS NULL,0,dw.RECHARGE_AMOUNT) as RECHARGE_AMOUNT,
+		IF(dw.LOSE_MEMBER_NUM IS NULL,0,dw.LOSE_MEMBER_NUM) as
+		LOSE_MEMBER_NUM,
+		IF(dw.SALE_MONEY_TOTAL IS NULL,0,dw.SALE_MONEY_TOTAL) as SALE_MONEY_TOTAL,
+		IFNULL(Round(dw.SALE_MONEY_TOTAL/dw.SALE_ORDER_TOTAL,1),0) as s,
+		CONCAT(FORMAT(IFNULL(dw.SALE_MONEY_MOVIE/dw.SALE_MONEY_TOTAL,0)*100,1),'%') as s1,
+		CONCAT(FORMAT(IFNULL(dw.SALE_MONEY_GOODS/dw.SALE_MONEY_TOTAL,0)*100,1),'%') as s2
+		from DW_BU_MEMBER dw where STATISTICAL_DATE = #{date,jdbcType=VARCHAR} and
+		CINEMA_CODE =
+		#{theaterId,jdbcType=VARCHAR} order by SALE_MONEY_TOTAL desc
+	</select>
+</mapper>

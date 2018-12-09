@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.RoleInfoMapper">
+	<select id="queryRoleInfoByInput" parameterType="com.oristartech.cinema.pojo.UserInput"
+		resultType="java.util.Map">
+		select roleID,roleName,level from roles where roleID in
+		(select roleID from users where mobile =#{mobile} and passWord=#{sPassWord} and status='1')
+	</select>
+</mapper>

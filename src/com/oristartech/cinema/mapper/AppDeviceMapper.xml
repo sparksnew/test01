@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.AppDeviceMapper">
+	<select id="queryDeviceListByCustomerID" resultType="java.util.Map">
+		SELECT
+		a.ProjectID,a.ItemID,a.Name,a.AssetNo,a.Description,a.Field1,f.WarranteeFrom,f.WarranteeTo,f.WarranteedBy,c.CustomerID,c.CompanyName
+		FROM ASSETITEM a ,AssetItemValueFields f,Customers c WHERE
+		(a.CURRENTUSER = c.CustomerID or a.ownershipstatusid=c.CustomerID) and
+		c.CustomerID = #{theaterId} and f.ItemID=a.ItemID order by a.Name
+	</select>
+	<select id="queryTroubleField" resultType="java.util.Map">
+		SELECT CASE when
+		Field1 is null then '未知'
+		else Field1 end as Field1
+		FROM ASSETITEM WHERE
+		(CURRENTUSER = #{theaterId} or ownershipstatusid=
+		#{theaterId})
+		GROUP BY
+		Field1
+	</select>
+	<select id="queryEquipment" resultType="java.util.Map">
+		SELECT
+		ProjectID,ItemID,Name,AssetNo,Description,Field1
+		FROM ASSETITEM
+		WHERE
+		(CURRENTUSER =#{theaterId} or ownershipstatusid=#{theaterId}) and
+		Field1 is  null
+	</select>
+	<select id="queryEquipment1" resultType="java.util.Map">
+		SELECT
+		ProjectID,ItemID,Name,AssetNo,Description,Field1
+		FROM ASSETITEM
+		WHERE
+		(CURRENTUSER =#{theaterId} or ownershipstatusid=#{theaterId})
+		and
+		Field1=#{positionID}
+	</select>
+
+	<select id="queryEquipment2" resultType="java.util.Map">
+		select
+		a.ProjectID,a.ItemID,a.Name,a.AssetNo,a.Description,a.Field1,CONVERT(varchar(100),f.WarranteeFrom, 120) as WarranteeFrom,CONVERT(varchar(100),f.WarranteeTo, 120) as WarranteeTo,f.WarranteedBy,c.CustomerID,c.CompanyName
+		FROM ASSETITEM a ,AssetItemValueFields f,Customers c WHERE
+		(a.CURRENTUSER = c.CustomerID or a.ownershipstatusid=c.CustomerID) and
+		c.CustomerID = #{theaterId} and f.ItemID=a.ItemID order by a.Name
+	</select>
+</mapper>

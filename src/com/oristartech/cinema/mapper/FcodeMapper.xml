@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 获取所有激活码信息 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FcodeMapper">
+	<select id="AllFcodelistPage" parameterType="pd" resultType="pd"
+		useCache="false">
+		select b.invitationID,
+		b.createDate,
+		b.userName,
+		b.roleName,
+		b.customerName,
+		b.fCode,
+		b.applicant,
+		b.codeStatus,
+		b.cinemaName,
+		b.cityName ,
+		b.timeLong,
+		c.mobile ,
+		b.deviceType,
+		c.activeTime
+		from (select
+		n.invitationID,
+		n.userID as
+		userName,
+		(select roleName from roles where
+		roleID = n.roleID) as
+		roleName,
+		(case when n.deviceType=1 then 'PC端' else 'APP'
+		end) as deviceType,
+		n.timeLong,
+		(select
+		customerName from customers
+		where customerID = n.customerID) as
+		customerName,
+		n.fCode,
+		n.createDate,
+		n.applicant as applicant,
+		(case when
+		n.codeStatus = 1 then '未使用' when n.codeStatus=2 then '已使用' else
+		'未使用'
+		end) as codeStatus,
+		(select cinemaName from cinema where cinemaID
+		=n.cinemaID)
+		as cinemaName,
+		(select cityName from city where cityID =
+		n.cityID) as
+		cityName,
+		n.regionID
+		from userinvitation n) b
+		left join
+		(select
+		a.invitationID,
+		(select mobile from users where userID =
+		a.userID) as
+		mobile,
+		a.activationID,
+		a.activeTime
+		from activation a) c on
+		c.invitationID = b.invitationID where 1=1
+		<if test="pd.USERNAME != null and pd.USERNAME != ''"><!-- 关键词检索 -->
+			and
+			(
+			b.userName LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			b.roleName LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			b.customerName LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			b.cinemaName LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			b.applicant LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			)
+		</if>
+		<if test="pd.roleName != null and pd.roleName != ''"><!-- 角色检索 -->
+			and b.roleName=#{pd.roleName}
+		</if>
+		<if test="pd.lastLoginStart!=null and pd.lastLoginStart!=''"><!-- 创建时间检索 -->
+			and b.createDate &gt;= #{pd.lastLoginStart}
+		</if>
+		<if test="pd.lastLoginEnd!=null and pd.lastLoginEnd!=''"><!-- 创建时间检索 -->
+			and b.createDate &lt;= #{pd.lastLoginEnd}
+		</if>
+		order by b.createDate desc
+	</select>
+	<!-- 删除激活码 -->
+	<delete id="deleteFcode" parameterType="pd" flushCache="false">
+		delete
+		from
+		userinvitation
+		where
+		invitationID = #{codeID}
+	</delete>
+	<select id="AllRolelist" parameterType="pd" resultType="pd"
+		useCache="false">
+
+		select roleID,roleName from roles
+	</select>
+	<select id="AllTheaterslist" parameterType="pd" resultType="pd"
+		useCache="false">
+		select cinemaID,cinemaName from cinema where
+		customerID=#{pd.customerID}
+		<!-- select cinemaID,cinemaName from cinema -->
+	</select>
+	<select id="AllTheaterslist1" parameterType="pd" resultType="pd"
+		useCache="false">
+		select cinemaID,cinemaName from cinema
+	</select>
+
+	<!-- 新增用户 -->
+	<insert id="saveFcode" parameterType="pd" flushCache="false">
+		insert into
+		userinvitation (
+		userID,
+		roleID,
+		customerID,
+		fCode,
+		createDate,
+		applicant,
+		cinemaID,
+		deviceType,
+		timeLong,
+		codeStatus
+		) values (
+		(select UserId from
+		users where username=#{USERNAME}),
+		#{ROLE_ID},
+		#{CUSTOMER_ID},
+		#{fcode},
+		#{createDate},
+		#{USERNAME},
+		#{CINEMA_ID},
+		#{deviceType},
+		#{timeLong},
+		#{codeStatus}
+		)
+	</insert>
+</mapper>

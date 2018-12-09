@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.SumIncomeMapper">
+   <select id="getHistoryIncome" resultType="java.util.Map">
+    select DATE_FORMAT(d.STATISTICAL_DATE, '%Y-%m-%d') as STATISTICAL_DATE,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TOTAL dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_DATE=d.STATISTICAL_DATE and dw.SALE_TYPE='影片收入' ) as ypsr,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TOTAL dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_DATE=d.STATISTICAL_DATE and dw.SALE_TYPE='卖品收入' ) as mpsr,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TOTAL dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_DATE=d.STATISTICAL_DATE and dw.SALE_TYPE not in('卖品收入','影片收入')) as qtsr,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TOTAL dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_DATE=d.STATISTICAL_DATE ) as zsr     
+      from DW_BU_INCOME_TOTAL d 
+     where d.CINEMA_CODE=#{theaterID}
+	   and d.STATISTICAL_DATE &gt;=#{startDate}
+       and d.STATISTICAL_DATE &lt;=#{endDate}
+     group by STATISTICAL_DATE
+     order by STATISTICAL_DATE DESC
+     </select>
+	<select id="getThirtyDayFilmIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-
+		IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income,
+		STATISTICAL_DATE from DW_BU_INCOME_TOTAL dw where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE &gt;=#{startDate} and
+		STATISTICAL_DATE &lt;=#{endDate}
+		and SALE_TYPE='影片收入' group by
+		STATISTICAL_DATE
+	</select>
+	<select id="getThirtyDayGoodsIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-
+		IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income,
+		STATISTICAL_DATE from DW_BU_INCOME_TOTAL dw where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE &gt;=#{startDate} and
+		STATISTICAL_DATE &lt;=#{endDate}
+		and SALE_TYPE='卖品收入' group by
+		STATISTICAL_DATE
+	</select>
+	<select id="getThirtyDayOtherIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-
+		IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income,
+		STATISTICAL_DATE from DW_BU_INCOME_TOTAL dw where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE &gt;=#{startDate} and
+		STATISTICAL_DATE &lt;=#{endDate}
+		and SALE_TYPE='其他收入' group by
+		STATISTICAL_DATE
+	</select>
+    <select id="getRealTimeTTIncome" resultType="java.util.Map">
+     select d.STATISTICAL_DATE,date_format(d.STATISTICAL_TIME,'%H:%i:%s') as STATISTICAL_TIME,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TODAY dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_TIME=d.STATISTICAL_TIME and dw.SALE_TYPE='影片收入' ) as ypsr,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TODAY dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_TIME=d.STATISTICAL_TIME and dw.SALE_TYPE='卖品收入' ) as mpsr,
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TODAY dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_TIME=d.STATISTICAL_TIME and dw.SALE_TYPE='其他收入' ) as qtsr,  
+      (select IFNULL(SUM(IF(dw.SALE_MONEY IS NULL, 0, dw.SALE_MONEY)-IF(dw.REJECT_MONEY IS NULL, 0, dw.REJECT_MONEY)),0) as income from DW_BU_INCOME_TODAY dw where dw.CINEMA_CODE=d.CINEMA_CODE and dw.STATISTICAL_TIME=d.STATISTICAL_TIME ) as zsr 
+      from DW_BU_INCOME_TODAY d 
+     where d.CINEMA_CODE=#{theaterID}
+	   and d.STATISTICAL_DATE =#{today}
+       group by d.STATISTICAL_TIME
+	</select>
+	<select id="getTodayFilmIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dt.SALE_MONEY IS NULL, 0, dt.SALE_MONEY)-
+		IF(dt.REJECT_MONEY IS NULL, 0, dt.REJECT_MONEY)),0) as money,
+		date_format(STATISTICAL_TIME,'%H:%i:%s') as STATISTICAL_TIME from DW_BU_INCOME_TODAY dt where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE = #{today} and SALE_TYPE='影片收入' group by
+		STATISTICAL_TIME
+	</select>
+	<select id="getTodayGoodsIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dt.SALE_MONEY IS NULL, 0, dt.SALE_MONEY)-
+		IF(dt.REJECT_MONEY IS NULL, 0, dt.REJECT_MONEY)),0) as money,
+		date_format(STATISTICAL_TIME,'%H:%i:%s') as STATISTICAL_TIME from DW_BU_INCOME_TODAY dt where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE = #{today} and SALE_TYPE='卖品收入' group by
+		STATISTICAL_TIME
+	</select>
+	<select id="getTodayOtherIncome" resultType="java.util.Map">
+		select
+		SALE_TYPE,IFNULL(SUM(IF(dt.SALE_MONEY IS NULL, 0, dt.SALE_MONEY)-
+		IF(dt.REJECT_MONEY IS NULL, 0, dt.REJECT_MONEY)),0) as money,
+		date_format(STATISTICAL_TIME,'%H:%i:%s') as STATISTICAL_TIME from DW_BU_INCOME_TODAY dt where
+		CINEMA_CODE=#{theaterID}
+		and STATISTICAL_DATE = #{today} and SALE_TYPE='其他收入' group by
+		STATISTICAL_TIME
+	</select>
+</mapper>

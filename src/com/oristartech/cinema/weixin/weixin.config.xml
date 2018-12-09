@@ -1,0 +1,12 @@
+<xml>
+	<!-- <appId>wx1c98444c34477234</appId> -->
+	<appId>wx1c98444c34477234</appId>
+	<secret>5f7005d182d340cd13c844d5e10dbe32</secret>
+	<!-- 2c265861c4d4f593da516014ec0682ab -->
+	<token>12345</token>
+	<aesKey>m7NvTQ6OSNLC915MSDr6sXlJVsbZFJ4F7s7FfXNFnLD</aesKey>
+	<accessToken></accessToken>
+	<expiresIn></expiresIn>
+	<openId></openId>
+	<appKey>C677D6D838600001EFB0D06C33411588</appKey>
+</xml>

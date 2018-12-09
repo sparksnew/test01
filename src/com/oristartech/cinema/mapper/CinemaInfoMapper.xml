@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.CinemaInfoMapper">
+	<select id="queryCinemaInfoByInput" parameterType="com.oristartech.cinema.pojo.UserInput" resultType="java.util.Map">
+		select cinemaID,cinemaName,cinemaCode from cinema where cinemaID = (select cinemaID from users where mobile = 
+					#{mobile} and passWord = #{sPassWord} and status = '1') 
+	</select>	
+	<select id="queryCinemaCode" resultType="java.util.Map">
+		select cinemaID,cinemaCode,cinemaName from cinema where customerID=#{customerID} and cinemaCode is not null
+	</select>	
+	<select id="queryPlanSeat" resultType="java.util.Map">
+		select t.PERSON_NUM,t.PERSON_NUM_REJECT,t.TOTAL_SEAT_VALID,t.TOTAL_SEAT_INVALID from DW_BU_MOVIE_TIMES t left join DW_DIM_HALL h on h.HALL_CODE=t.HALL_CODE and h.CINEMA_CODE = t.CINEMA_CODE
+		 where t.CINEMA_CODE=#{theaterCode} AND h.ID=#{hallID} AND t.SHOW_TIME>=#{startTime} AND t.SHOW_TIME&lt;=#{endTime}
+		 AND t.PLAN_TIME_STATUS=1
+	</select>	
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:db.properties,classpath:redis.properties" />
+	<!-- 数据库连接池 -->
+	<bean id="cinema" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="maxActive" value="10" />
+		<property name="maxIdle" value="5" />
+		<property name="validationQuery">
+			<value>select 1</value>
+		</property>
+	</bean>
+	<!-- <bean id="ticket" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" /> <property 
+		name="url" value="jdbc:mysql://121.32.27.26:13306/DCS_DW?characterEncoding=UTF-8&amp;connectTimeout=9000&amp;socketTimeout=9000" 
+		/> <property name="username" value="cpms" /> <property name="password" value="cpmsuser" 
+		/> <property name="maxActive" value="10" /> <property name="maxIdle" value="5" 
+		/> <property name="validationQuery"> <value>select 1</value> </property> 
+		</bean> -->
+	<bean id="ticket" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://58.67.170.156:3306/DCS_DW?characterEncoding=UTF-8&amp;connectTimeout=9000&amp;socketTimeout=9000" />
+		<property name="username" value="oristar" />
+		<property name="password" value="Ticketcms3" />
+		<property name="maxActive" value="10" />
+		<property name="maxIdle" value="5" />
+		<property name="validationQuery">
+			<value>select
+				1
+			</value>
+		</property>
+	</bean>
+	<bean id="techexcel" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"></property>
+		<property name="url"
+			value="jdbc:sqlserver://118.190.91.92:1433;DatabaseName=CRM_ChenXing_Final"></property>
+		<property name="username" value="sa"></property>
+		<property name="password" value="Oristart!ECH"></property>
+		<property name="validationQuery">
+			<value>select
+				1
+			</value>
+		</property>
+	</bean>
+	<!-- <bean id="techexcel" class="org.apache.commons.dbcp.BasicDataSource" 
+		destroy-method="close"> <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"></property> 
+		<property name="url" value="jdbc:sqlserver://118.190.91.92:1433;DatabaseName=CRM_ChenXing_Final"></property> 
+		<property name="username" value="sa"></property> <property name="password" 
+		value="Oristart!ECH"></property> <property name="validationQuery"> <value>select 
+		1</value> </property> </bean> -->
+	<!-- <bean id="techexcel" class="org.apache.commons.dbcp.BasicDataSource" 
+		destroy-method="close"> <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"></property> 
+		<property name="url" value="jdbc:sqlserver://114.215.42.232:1433;DatabaseName=CRM_ChenXing_Final"></property> 
+		<property name="username" value="sa"></property> <property name="password" 
+		value="Oristart!ECH"></property> <property name="validationQuery"> <value>select 
+		1</value> </property> </bean> -->
+	<!-- 动态配置数据源 -->
+	<bean id="dataSource" class="com.oristartech.cinema.utils.DynamicDataSource">
+		<property name="targetDataSources">
+			<map key-type="java.lang.String">
+				<entry value-ref="cinema" key="cinema"></entry>
+				<entry value-ref="ticket" key="ticket"></entry>
+				<entry value-ref="techexcel" key="techexcel"></entry>
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="cinema"></property>
+	</bean>
+	<bean id="daoSupport" class="com.oristartech.cinema.mapper.DaoSupport"></bean>
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactory" />
+	</bean>
+	<!-- 配置SqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 数据库连接池 -->
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation"
+			value="classpath:/com/oristartech/cinema/mapper/mybatis-config.xml"></property>
+		<!-- 指定pojo的别名 -->
+		<property name="typeAliasesPackage" value="com.oristartech.cinema.pojo" />
+		<!-- 加载mybatis的全局配置文件 -->
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:/com/oristartech/cinema/mapper/*Mapper.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 配置mapper扫描 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.oristartech.cinema.mapper" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+
+	<!-- ================ Shiro start ================ -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="ShiroRealm" />
+	</bean>
+
+	<!-- 項目自定义的Realm -->
+	<bean id="ShiroRealm" class="com.oristartech.interceptor.shiro.ShiroRealm"></bean>
+
+	<!-- Shiro Filter -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+
+		<property name="loginUrl" value="/" />
+
+		<property name="successUrl" value="/main/index" />
+
+		<property name="unauthorizedUrl" value="/login_toLogin" />
+
+		<property name="filterChainDefinitions">
+			<value>
+				/static/login/** = anon
+				/static/js/myjs/** = authc
+				/static/js/** = anon
+				/uploadFiles/uploadImgs/** = anon
+				/code.do = anon
+				/login_login = anon
+				/app**/** = anon
+				/weixin/** = anon
+			</value>
+		</property>
+	</bean>
+	<!-- ================ Shiro end ================ -->
+	<!-- spring事务管理 -->
+	<!-- <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"> 
+		<property name="dataSource" ref="dataSource" /> </bean> <tx:annotation-driven 
+		transaction-manager="transactionManager" /> 事物切面配置 <tx:advice id="userTxAdvice" 
+		transaction-manager="transactionManager"> <tx:attributes> <tx:method name="*" 
+		propagation="REQUIRED" read-only="false" rollback-for="java.lang.Exception" 
+		/> </tx:attributes> </tx:advice> <aop:config> <aop:pointcut id="advice" expression="execution 
+		(* com.oristartech.cinema.*(..))" /> <aop:advisor advice-ref="userTxAdvice" 
+		pointcut-ref="advice" /> </aop:config> -->
+</beans>

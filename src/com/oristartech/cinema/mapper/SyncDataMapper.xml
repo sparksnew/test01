@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.SyncDataMapper" >
+<select id="searchLastSync"  resultType="java.util.Map">
+	select lastSync from datasync where syncTable=#{tableName}
+</select>
+<update id="updateDataSync">
+	Update datasync set lastSync = #{currentDate} where syncTable = #{tableName}
+</update>
+<insert id="insertDataSync">
+	Insert into  datasync(lastSync,SyncId,syncTable)values(#{currentDate},1,#{tableName})
+</insert>
+<select id="searchCustInfo" resultType="java.util.Map">
+	select a.CustomerID,a.CompanyName,a.customerno,a.DOBC,a.ParentCompanyID,b.fieldInteger4,
+     	   b.fieldInteger8,
+		   b.FieldShortText6,
+		   b.FieldShortText7,
+		   b.FieldShortText5
+		   from customers a left join UserCustomFieldsData1 b on a.CustomerID = b.CustomerID where (a.BusinessTypeID= 9 or a.BusinessTypeID= 0)
+		   and a.projectID = 1  and b.ProjectID= 1 and a.DOBC > #{lastUpdateTime}
+</select>
+<select id="searchCustomerID" resultType="java.util.Map">
+	select customerID from customers where customerID=#{customerID1}
+</select>
+<update id="updateCustInfo" parameterType="java.util.Map">
+	update customers set customerName =#{CompanyName},shortName=#{fieldInteger8},level=#{fieldInteger4},contact=#{FieldShortText6},tel=#{FieldShortText7},adress=#{FieldShortText5} where customerID=#{CustomerID}
+</update>
+<insert id="insertCustInfo">
+	insert into customers(customerID,customerName,shortName,level,contact,tel,adress)values(#{CustomerID},#{CompanyName},#{fieldInteger8},#{fieldInteger4},#{FieldShortText6},#{FieldShortText7},#{FieldShortText5})
+</insert>
+<select id="querySyncTheaterData" resultType="java.util.Map">
+	select a.CustomerID, a.CompanyName,a.customerno,a.DOBC,a.parentcustomerid ,a.Phone, b.fieldInteger2,
+				b.fieldInteger3,
+				b.fieldDate1
+				from customers a left join UserCustomFieldsData1 b on a.CustomerID = b.CustomerID where a.BusinessTypeID= 1
+				and a.projectID = 1  and b.ProjectID= 1 and a.DOBC > #{lastUpdateTime} 
+</select>
+<select id="queryCinemaID" resultType="java.util.Map">
+	select cinemaID from cinema where cinemaID= #{customerID1}
+</select>
+<update id="updateCinemaInfo" parameterType="java.util.Map">
+	update cinema set cinemaName =#{cinemaName},cinemaCode=#{cinemaCode},createDateTime=#{createDateTime},customerID=#{customerID},phone=#{phone},startDate=#{startDate},mainChains=#{mainChains},businessStatus=#{businessStatus} where cinemaID=#{cinemaID}
+</update>
+<insert id="insertCinemaInfo">
+	insert into cinema(cinemaID,cinemaName,cinemaCode,createDatetime,customerID,phone,startDate,mainChains,businessStatus)values(#{cinemaID},#{cinemaName},#{cinemaCode},#{createDatetime},#{customerID},#{phone},#{startDate},#{mainChains},#{businessStatus})
+</insert>
+</mapper>

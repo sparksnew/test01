@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.UserMapper">
+	<select id="getUserInfo" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select
+		operationStatus,adviseStatus,accountStatus,deviceType,address,lastLoginTime
+		from
+		users
+		where userID = #{userID}
+	</select>
+	<select id="getInvInfo" resultType="java.util.Map"
+		parameterType="java.util.Map">
+		SELECT
+		u.userName,
+		u.mobile,
+		u.email,
+		c.customerName,
+		r.roleName
+		FROM
+		users u,
+		customers c,
+		roles r
+		WHERE
+		u.customerID =
+		c.customerID
+		AND u.roleID = r.roleID
+		AND u.userID = #{userID}
+	</select>
+	<select id="getEmpInfo" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT
+		u.userName,
+		u.mobile,
+		u.email,
+		c1.cinemaName,
+		c2.customerName,
+		r.roleName
+		FROM
+		users u,
+		cinema c1,
+		customers c2,
+		roles r
+		WHERE
+		u.cinemaID = c1.cinemaID
+		AND u.customerID = c2.customerID
+		AND
+		u.roleID = r.roleID
+		AND u.userID = #{userID}
+	</select>
+	<!-- 更新用户邮箱地址 -->
+	<select id="updateUserEmail" parameterMap="inputEmail"
+		statementType="CALLABLE" resultType="java.util.Map">
+		CALL updateEmail(?,?)
+	</select>
+	<parameterMap id="inputEmail" type="java.util.Map">
+		<parameter property="userID" mode="IN" jdbcType="INTEGER"></parameter>
+		<parameter property="email" mode="IN" jdbcType="VARCHAR"></parameter>
+	</parameterMap>
+	<!-- 更新用户密码 -->
+	<select id="updateUserPass" parameterMap="inputPass"
+		statementType="CALLABLE" resultType="java.util.Map">
+		CALL updatePass(?,?,?)
+	</select>
+	<parameterMap id="inputPass" type="java.util.Map">
+		<parameter property="userID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="newPassWord" mode="IN" jdbcType="VARCHAR" />
+		<parameter property="date" mode="IN" jdbcType="VARCHAR" />
+	</parameterMap>
+	<!-- 更新用户手机号 -->
+	<select id="updateUserPhone" parameterMap="inputPhone"
+		statementType="CALLABLE" resultType="java.util.Map">
+		CALL updatePhone(?,?,?)
+	</select>
+	<parameterMap type="java.util.Map" id="inputPhone">
+		<parameter property="userID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="phone" mode="IN" jdbcType="VARCHAR" />
+		<parameter property="date" mode="IN" jdbcType="VARCHAR" />
+	</parameterMap>
+	<!-- 更新报障进度状态 -->
+	<update id="updateOpeSet" parameterType="java.util.Map">
+		update users set
+		operationStatus = #{value} where userID = #{userID}
+	</update>
+	<!-- 更新投诉建议状态 -->
+	<update id="updateAdvSet" parameterType="java.util.Map">
+		update users set
+		adviseStatus = #{value} where userID = #{userID}
+	</update>
+	<!-- 更新账户状态 -->
+	<update id="updateAccSet" parameterType="java.util.Map">
+		update users set
+		accountStatus = #{value} where userID = #{userID}
+	</update>
+	<!-- 获取账户登录次数 -->
+	<select id="getLoginCountInfo" resultType="Integer"
+		parameterType="java.util.Map">
+		select IFNULL(count,0) as count from users where
+		(userName
+		=
+		#{mobile}  or mobile= #{mobile}) and customerID=#{customerCode}
+	</select>
+	<!-- 更新账户登录信息 -->
+	<update id="updateUserLoginInfo" parameterType="java.util.Map">
+		update users set
+		deviceType=#{phoneType1},address=#{address},lastLoginTime=#{lastLoginTime},count=#{count}
+		where (userName = #{mobile} or mobile= #{mobile}) and
+		customerID=#{customerCode}
+	</update>
+	<!-- 更新账户推送ID -->
+	<update id="updateRegistrationId" parameterType="java.util.Map">
+		update users set
+		registerID = #{registrationId} where userName = #{name}
+	</update>
+	<!-- 获取个人消息列表 -->
+	<select id="getMsgList" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT
+		m.content,m.messageID,m.createTime,m.title,m.label,m.status,m.ownerdUser,m.messageType,m.fromUser
+		from message m,users u where m.ownerdUser = u.userID AND
+		u.userID=#{userID} order by m.createTime desc
+	</select>
+	<!-- 点击消息事件 -->
+	<select id="getMsgDetail" parameterMap="inputMsg" statementType="CALLABLE"
+		resultType="java.util.Map">
+		CALL opeMsg(?,?,?)
+	</select>
+	<parameterMap type="java.util.Map" id="inputMsg">
+		<parameter property="messageID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="fromUser" mode="IN" jdbcType="INTEGER" />
+		<parameter property="messageType" mode="IN" jdbcType="INTEGER" />
+	</parameterMap>
+	<!-- 禁用用户 -->
+	<select id="forbiddenUser" parameterMap="inputMobile"
+		statementType="CALLABLE" resultType="java.util.Map">
+		CALL forbiddenUser(?)
+	</select>
+	<parameterMap type="java.util.Map" id="inputMobile">
+		<parameter property="mobile" mode="IN" jdbcType="VARCHAR" />
+	</parameterMap>
+	<!-- 删除用户信息 -->
+	<delete id="deleteUserMsg">
+		delete m from message m where m.messageID in
+		<foreach collection="array" item="arr" open="(" separator=","
+			close=")">
+			#{arr}
+		</foreach>
+	</delete>
+	<!-- 删除用户信息 -->
+	<delete id="updateMsgStatus">
+		update message set status = '1' where messageID
+		<foreach collection="array" item="arr" open="(" separator=","
+			close=")">
+			#{arr}
+		</foreach>
+	</delete>
+	<!-- 禁用用户 -->
+	<select id="UnAccountLogin" parameterMap="inputMobile"
+		statementType="CALLABLE" resultType="java.util.Map">
+		CALL getUnAccountLoginUser(?)
+	</select>
+	<!-- 获取微信ID是否已经绑定 -->
+	<select id="getWeixinCountInfo" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select count(1) as SUM from users t where
+		t.openID=#{OpendId}
+		<if test="userID != null and userID != ''">
+			and t.userName=#{userID}
+		</if>
+	</select>
+	<!-- 更新账户微信ID -->
+	<update id="UpdateUserWeixinInfo" parameterType="java.util.Map">
+		update users set
+		openId = #{OpendId} where userName = #{userID}
+	</update>
+	<select id="queryUserInfo" resultType="java.util.Map">
+		select * from users where
+		(userName = #{loginName} or mobile= #{loginName}) and
+		customerID=#{customerCode}
+	</select>
+	<update id="updateUserLoginLog">
+		update users set cinemaCode = #{cinemaCode} where
+		userID = #{userID}
+	</update>
+</mapper>

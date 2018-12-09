@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.UserInfoMapper">
+	<select id="queryUserInfoByInput" parameterType="com.oristartech.cinema.pojo.UserInput"
+		resultType="java.util.Map">
+		select
+		u.operationStatus,u.adviseStatus,u.accountStatus,u.userID,u.userName,u.email,u.customerID,u.mobile,u.cinemaID,u.deviceType,u.address,u.lastLoginTime
+		from users u where u.mobile =
+		#{mobile} and u.passWord = #{sPassWord}
+	</select>
+	<select id="queryUserInfoByInput1" parameterType="com.oristartech.cinema.pojo.UserInput"
+		resultType="java.util.Map">
+		select
+		u.operationStatus,u.adviseStatus,u.accountStatus,u.userID,u.userName,u.email,u.customerID,u.mobile,u.cinemaID,c.cinemaName,u.deviceType,u.address,u.lastLoginTime
+		from users u,cinema c where u.mobile =
+		#{mobile} and u.passWord =
+		#{sPassWord} and u.cinemaID = c.cinemaID
+	</select>
+	<select id="queryUserNum" resultType="java.lang.Integer">
+		select count(1) from users
+		u where u.mobile = #{sPhone} and u.passWord =
+		#{sPassWord}
+	</select>
+
+	<select id="getUserBase" resultType="java.util.Map">
+		select
+		m.moduleID,m.moduleName,m.moduleCode,m.modulebgColor,m.moduleImageName
+		from module m where m.moduleID in (select p.moduleID from permissions
+		p where p.roleID in (select u.roleID from userroles u where u.userId=
+		#{userID}))
+	</select>
+
+	<select id="validateUserName" resultType="java.lang.Integer">
+		select count(userID) from users where userName=#{loginName} and
+		customerID=#{customerCode}
+	</select>
+	
+	<select id="validateUserMobile" resultType="java.lang.String">
+		select mobile from users where userName=#{loginName} and
+		customerID=#{customerCode}
+	</select>
+
+	<select id="queryMobile" resultType="java.util.Map">
+		select userName,passWord from users where mobile=#{loginName}
+	</select>
+
+	<insert id="insertLoginLog">
+		insert into
+		loginlog(loginTime,loginAddress,deviceType,loginIP,isTrue,falseReason,userID,userName)
+		VALUES(#{loginTime},#{loginAddress},#{deviceType},#{loginIP},#{isTrue},#{falseReason},#{userID},#{userName})
+	</insert>
+    
+    <select id="queryMobileIsExist"  resultType="java.lang.Integer">
+        select count(userID) from users where mobile = #{mobile}
+    </select>
+    
+	<insert id="bindMobile">
+		insert into users(userID,userName,passWord,mobile,customerID)
+		VALUES(#{userID},#{userName},#{passWord},#{mobile},#{customerCode})
+	</insert>
+	
+	<update id="updateMobile">
+	    update users set mobile = #{mobile} where userID = #{userID}
+	</update>
+</mapper>

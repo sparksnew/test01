@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.FilmInfoMapper" >
+<select id="searchMovieCode" resultType="java.util.Map">
+	SELECT
+	dbs.movieCode
+FROM
+	(select SUBSTRING_INDEX(DBSM.MOVIE_NAME,'（',1) movieName,DBSM.MOVIE_CODE movieCode from DW_BASE_SCH_MOVIE DBSM where DBSM.MOVIE_NAME like ('%数字%') or DBSM.MOVIE_NAME like ('%巨幕%') or DBSM.MOVIE_NAME like ('%IMAX%')
+   UNION all select DBSM.MOVIE_NAME movieName,DBSM.MOVIE_CODE movieCode from DW_BASE_SCH_MOVIE DBSM where DBSM.MOVIE_NAME not like ('%数字%') and DBSM.MOVIE_NAME not like ('%巨幕%') and DBSM.MOVIE_NAME not like ('%IMAX%'))
+		dbs
+WHERE
+	dbs.movieName = #{picShort}
+</select>
+<select id="searchMovieCode1" resultType="java.util.Map">
+SELECT
+	dbm.movieCode
+FROM
+	(
+		SELECT
+			DBM.MOVIE_CODE movieCode
+		FROM
+			DW_BU_MOVIE DBM
+		WHERE
+			(DBM.MOVIE_NAME LIKE ('%数字%')
+		OR DBM.MOVIE_NAME LIKE ('%巨幕%')
+		OR DBM.MOVIE_NAME LIKE ('%IMAX%'))
+		AND DBM.MOVIE_NAME LIKE concat('%' ,#{picShort},'%')
+		UNION ALL
+			SELECT
+				DBM.MOVIE_CODE movieCode
+			FROM
+				DW_BU_MOVIE DBM
+			WHERE
+				(DBM.MOVIE_NAME NOT LIKE ('%数字%')
+			AND DBM.MOVIE_NAME NOT LIKE ('%巨幕%')
+			AND DBM.MOVIE_NAME NOT LIKE ('%IMAX%')) 
+			AND DBM.MOVIE_NAME LIKE concat('%' ,#{picShort},'%')
+	) dbm
+</select>
+
+
+<select id="searchMovieInfo" resultType="java.lang.Integer">
+	select count(1) from movieimg where movieimg.MOVIE_CODE=#{movieCode}
+</select>
+<insert id="insertMovieInfo">
+	insert into movieimg(movie_code,imgUrl,imgshadow) values(#{movieCode},#{movieUrl},#{movieShadow})
+</insert>
+<select id="getFilmLocalInfo" resultType="java.util.Map">
+	SELECT IFNULL(SUM(MOVIE_SALE-MOVIE_SALE_REJECT+MOVIE_SALE_ADD),0) AS totalSale,
+	IFNULL((SELECT SUM(MOVIE_SALE-MOVIE_SALE_REJECT+MOVIE_SALE_ADD) totalSale FROM DW_BU_MOVIE
+	 WHERE SHOW_TIME &lt;=DATE_ADD((select m.DATE_PUBLIC_SHOW from DW_BASE_SCH_MOVIE m where SUBSTR(m.MOVIE_CODE,5,12)=#{movieCode} ORDER BY ABS(DATEDIFF(SUBSTR(NOW(),1,10),m.DATE_PUBLIC_SHOW)) ASC limit 1),INTERVAL 6 DAY)
+	AND SHOW_TIME &gt;=(select m.DATE_PUBLIC_SHOW from DW_BASE_SCH_MOVIE m where SUBSTR(m.MOVIE_CODE,5,12)=#{movieCode} ORDER BY ABS(DATEDIFF(SUBSTR(NOW(),1,10),m.DATE_PUBLIC_SHOW)) ASC limit 1)
+	 AND SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode}),0) AS weekSale,
+	IFNULL((SELECT sum(MOVIE_SALE - MOVIE_SALE_REJECT + MOVIE_SALE_ADD) FROM DW_BU_MOVIE WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode} AND PLAN_TIME_VALID>0
+	AND SHOW_TIME=(select m.DATE_PUBLIC_SHOW from DW_BASE_SCH_MOVIE m where SUBSTR(m.MOVIE_CODE,5,12)=#{movieCode} ORDER BY ABS(DATEDIFF(SUBSTR(NOW(),1,10),m.DATE_PUBLIC_SHOW)) ASC limit 1)
+	),0) AS beginSale
+	FROM DW_BU_MOVIE
+	WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode}
+</select>
+<select id="getSellChannels" resultType="java.util.Map">
+		SELECT SUM((IFNULL(dw.MOVIE_SALE,0)-IFNULL(dw.MOVIE_SALE_ADD,0)+IFNULL (dw.MOVIE_SALE_REJECT,0))) as movieSale,CHANNEL_TYPE,
+	 CONCAT(FORMAT(SUM((IFNULL(dw.MOVIE_SALE,0)-IFNULL(dw.MOVIE_SALE_ADD,0)+IFNULL (dw.MOVIE_SALE_REJECT,0)))/(SELECT SUM((IFNULL(dw.MOVIE_SALE,0)-IFNULL(dw.MOVIE_SALE_ADD,0)+IFNULL (dw.MOVIE_SALE_REJECT,0))) FROM DW_BU_MOVIE_CHANNEL dw WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode})*100,0),'%') AS Ratio
+	 FROM DW_BU_MOVIE_CHANNEL dw WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode} group by CHANNEL_TYPE
+</select>
+<select id="getMemberRatio" resultType="java.util.Map">
+   SELECT   bbm.MEMBER_CLASS_CODE as memberCode,
+	IFNULL((SELECT DISTINCT(MEMBER_CLASS_NAME) FROM DW_BU_MEMBER WHERE MEMBER_CLASS_ID = bbm.MEMBER_CLASS_CODE AND CINEMA_CODE='41152501'),'') AS memberClassCode,
+	SUM(bbm.AMOUNT) AS Amount,
+    CONCAT(FORMAT((SUM(AMOUNT)/(SELECT SUM(AMOUNT) FROM BW_BU_MEMBER_MOVIE WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode}))*100,0),'%') AS Percentage
+    FROM BW_BU_MEMBER_MOVIE bbm
+    WHERE SUBSTR(MOVIE_CODE,5,12)=#{movieCode} AND CINEMA_CODE=#{cinemaCode} GROUP BY MEMBER_CLASS_CODE 
+</select>
+<select id="getDailyDetail" resultType="java.util.Map">
+			SELECT DATE_FORMAT(dbm.SHOW_TIME,'%Y-%m-%d') as showTime,SUM(dbm.MOVIE_SALE+dbm.MOVIE_SALE_ADD-dbm.MOVIE_SALE_REJECT) movieSale,
+		CONCAT(FORMAT(((IFNULL(dbm.PLAN_TIME_VALID,0))/(SELECT SUM(IFNULL(PLAN_TIME_VALID,0)) FROM DW_BU_MOVIE WHERE CINEMA_CODE=#{cinemaCode} AND SHOW_TIME=dbm.SHOW_TIME AND PLAN_TIME_VALID&gt;0))*100,1),'%') planRatio,
+		CONCAT(FORMAT(((IFNULL(MOVIE_SALE,0)+IFNULL(MOVIE_SALE_ADD,0)-IFNULL(MOVIE_SALE_REJECT,0))/(SELECT SUM(IFNULL(MOVIE_SALE,0)+IFNULL(MOVIE_SALE_ADD,0)-IFNULL(MOVIE_SALE_REJECT,0)) FROM DW_BU_MOVIE WHERE CINEMA_CODE=#{cinemaCode} AND SHOW_TIME =dbm.SHOW_TIME ))*100,0),'%') ticketRatio,
+		SUM(IFNULL(PERSON_NUM,0)+IFNULL(PERSON_NUM_ADD,0)-IFNULL(PERSON_NUM_REJECT,0)) personNum
+		FROM DW_BU_MOVIE dbm 
+		WHERE SUBSTR(dbm.MOVIE_CODE,5,12)=#{movieCode} AND dbm.CINEMA_CODE=#{cinemaCode} AND dbm.SHOW_TIME BETWEEN DATE_SUB(NOW(),INTERVAL 7 DAY) AND DATE_ADD(NOW(),INTERVAL 2 DAY)
+		GROUP BY dbm.SHOW_TIME ORDER BY dbm.SHOW_TIME
+</select>
+<select id="queryMovieCode">
+		SELECT MOVIE_CODE FROM DW_BU_MOVIE WHERE MOVIE_NAME = #{movieName}
+</select>
+<insert id="insertFilmInfo">
+		INSERT INTO MOVIEBOX(movieName,MovieCode,RealBox,TotalBox,ShowDays,BoxRate,StaticDate,mid,firstWeekBox) 
+		VALUES(#{movieName},#{movieCode},#{realBox},#{totalBox},#{showDays},#{boxRate},#{current},#{mId},#{firstWeekBox})
+</insert>
+<insert id="addMovieInfo">
+		UPDATE moviebox SET FirstWeekBox=#{firstWeekBox} WHERE mid=#{mid} and StaticDate=#{current}
+</insert>
+<insert id="addMovieInfo1">
+		UPDATE moviebox m SET FirstWeekBox=m.totalbox WHERE mid=#{mid} and StaticDate=#{current} and movieCode=#{movieCode}
+</insert>
+<insert id="insertTotalInfo">
+		INSERT INTO countrybox(totalCountryBox,staticDate) values(#{sumBox},#{current})
+</insert>
+<update id="updateTotalInfo">
+		UPDATE countrybox SET totalCountryBox=#{sumBox} WHERE staticDate=#{current}
+</update>
+<update id="updateFilmInfo">
+		UPDATE MOVIEBOX 
+		SET RealBox=#{realBox},TotalBox=#{totalBox},ShowDays=#{showDays},BoxRate=#{boxRate},mid=#{mid}
+		WHERE StaticDate=#{current} AND MovieCode=#{movieCode}
+</update>
+<update id="changeFilmInfo">
+		UPDATE MOVIEBOX 
+		SET RealBox=#{realBox},TotalBox=#{totalBox},ShowDays=#{showDays},BoxRate=#{boxRate}
+		WHERE StaticDate=#{current} AND MovieCode=#{movieCode}
+</update>
+<select id="getMovieMidList" resultType="java.util.Map">
+		select mid,firstWeekBox,movieCode from movieBox WHERE StaticDate = #{current}
+</select>
+<select id="getFilmTotalInfo" resultType="java.util.Map">
+		SELECT TotalBox,BoxRate,FirstWeekBox FROM moviebox WHERE MovieCode=#{movieCode} AND StaticDate=#{current}
+</select>
+<select id="getMovieCodeDaily" resultType="java.util.Map">
+		SELECT MOVIE_CODE FROM DW_BU_MOVIE WHERE SHOW_TIME = #{current} AND CINEMA_CODE=#{cinemaCode}
+</select>
+<select id="getImgInfo" resultType="java.util.Map">
+		SELECT imgURL,imgshadow FROM movieimg WHERE MOVIE_CODE = #{movieCode}
+</select>
+<select id="queryMovieRank" resultType="java.util.Map">
+		SELECT dbs.MOVIE_NAME movieName,SUBSTR(dbs.MOVIE_CODE,LENGTH(dbs.MOVIE_CODE)-7,LENGTH(dbs.MOVIE_CODE)) mvCode,
+		COUNT(SUBSTR(dbs.MOVIE_CODE,LENGTH(dbs.MOVIE_CODE)-7,LENGTH(dbs.MOVIE_CODE))) num FROM 
+		DW_BU_MOVIE_TODAY dbs
+		WHERE dbs.CINEMA_CODE=#{cinemaCode} AND dbs.SHOW_TIME LIKE concat('%',#{current},'%')
+		GROUP BY SUBSTR(dbs.MOVIE_CODE,LENGTH(dbs.MOVIE_CODE)-7,LENGTH(dbs.MOVIE_CODE)) ORDER BY num DESC
+</select>
+<select id="getAddress" resultType="java.lang.String">
+        SELECT setValue FROM syssetting where setName = #{name}
+</select>
+<select id="addMid">
+		UPDATE MOVIEBOX 
+		SET mid=#{mid}
+		WHERE movieName LIKE concat('%',#{filmName},'%')
+</select>
+<select id="queryTotalNum" resultType="java.lang.Integer">
+		SELECT count(1) recordNum FROM countrybox WHERE staticDate=#{current}
+</select>
+<select id="queryBoxNum" resultType="java.lang.Integer">
+		SELECT count(1) boxNum FROM moviebox WHERE MovieCode=#{movieCode} AND StaticDate =#{current}
+</select>
+<select id="getWeekBoxInfo" resultType="java.util.Map">
+		SELECT DISTINCT(firstWeekBox),MovieCode,mid FROM moviebox WHERE firstWeekBox!='0'
+</select>
+<select id="chgWeekBox" resultType="java.util.Map">
+		UPDATE moviebox SET FirstWeekBox=#{firstWeekBox},mid=#{mid} WHERE movieCode=#{movieCode} and StaticDate=#{current}
+</select>
+<select id="getCountryBox" resultType="java.util.Map">
+		SELECT TotalBox,BoxRate,FirstWeekBox FROM MOVIEBOX WHERE MOVIECODE=#{movieCode} AND StaticDate IN (SELECT MAX(StaticDate) FROM moviebox WHERE MovieCode=#{movieCode}) 
+</select>
+<update id="updateWeekBox">
+		 UPDATE moviebox set mid=
+		IFNULL((SELECT a.mid from
+		(SELECT mid FROM moviebox WHERE MOVIECODE=#{movieCode} AND mid !='0' LIMIT 0,1) a),0)
+		 WHERE movieCode=#{movieCode} and StaticDate=#{current}
+</update>
+<update id="updateMovieInfo">
+		UPDATE movieimg SET imgUrl =#{movieUrl},imgshadow=#{movieShadow} WHERE movie_code=#{movieCode}
+</update>
+<select id="getWeekFilmInfo" resultType="java.util.Map">
+		SELECT IFNULL(SUM(MOVIE_SALE-MOVIE_SALE_REJECT+MOVIE_SALE_ADD)/10000,0) weekSale FROM DW_BU_MOVIE
+	    WHERE SHOW_TIME &lt;=DATE_ADD((select m.DATE_PUBLIC_SHOW from DW_BASE_SCH_MOVIE m where SUBSTR(m.MOVIE_CODE,5,12)=#{movieCode} ORDER BY ABS(DATEDIFF(SUBSTR(NOW(),1,10),m.DATE_PUBLIC_SHOW)) ASC limit 1),INTERVAL 6 DAY)
+	    AND SHOW_TIME &gt;=(select m.DATE_PUBLIC_SHOW from DW_BASE_SCH_MOVIE m where SUBSTR(m.MOVIE_CODE,5,12)=#{movieCode} ORDER BY ABS(DATEDIFF(SUBSTR(NOW(),1,10),m.DATE_PUBLIC_SHOW)) ASC limit 1)
+	    AND SUBSTR(MOVIE_CODE,5,12)=#{movieCode}
+</select>
+<select id="getFirstShowDay" resultType="java.lang.Integer">
+		select showDays from moviebox where movieCode=#{movieCode} order by showDays desc limit 0,1
+</select>
+</mapper>

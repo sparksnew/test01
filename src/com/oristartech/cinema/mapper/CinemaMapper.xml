@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CinemaMapper">
+
+	<!-- 获取所有影院信息 -->
+
+	<select id="AllCinemalistPage" parameterType="pd" resultType="pd"
+		useCache="false">
+		select CINEMAID,CINEMANAME,CINEMACODE,ADRESS from CINEMA where 1=1
+		<if test="pd.USERNAME != null and pd.USERNAME != ''"><!-- 关键词检索 -->
+			and
+			(
+			CINEMANAME LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			CINEMACODE LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			or
+			ADRESS LIKE CONCAT(CONCAT('%', #{pd.USERNAME}),'%')
+			)
+		</if>
+	</select>
+
+
+	<!-- 通过影院名称获得数据 -->
+
+	<!-- 通过影院编码获取数据 -->
+
+
+</mapper>

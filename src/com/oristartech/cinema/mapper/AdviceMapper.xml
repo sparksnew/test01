@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oristartech.cinema.mapper.AdviceMapper">
+	<!-- 获取投资人的所有影院信息 -->
+	<select id="getInvestorCinemaID" resultType="java.util.Map">
+		select cinemaID from cinema where
+		customerID = (select customerID from users where userID = #{userID})
+	</select>
+	<!-- 获取雇员的所有影院信息 -->
+	<select id="getEmpCinemaID" resultType="java.lang.String">
+		select CustomerID from customers where CustomerNo = #{userID}
+	</select>
+	<!-- 插入userBug关联信息 -->
+	<insert id="insertUserBug">
+		insert into userbugs(BugID,UserID,type) VALUES (#{indentID},#{userID},1)
+	</insert>
+	<!-- 获取用户所有的投诉建议单号 -->
+	<select id="getUserAdvList" resultType="java.lang.String">
+		select BugID from userbugs where UserID = #{userID}
+	</select>
+</mapper>

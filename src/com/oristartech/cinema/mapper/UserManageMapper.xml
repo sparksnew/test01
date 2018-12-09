@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.oristartech.cinema.mapper.UserManageMapper">
+	<!-- 获取投资人下属雇员列表信息 -->
+	<select id="getInvUser" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT
+		customers.customerName,
+		users.userID,
+		users.email,
+		users.customerID,
+		users.userName,
+		users.mobile,
+		users.status,
+		roles.roleName,
+		cinema.cinemaName
+		FROM
+		users,
+		cinema,
+		roles,
+		customers
+		WHERE
+		users.customerID = customers.customerID
+		AND users.cinemaID = cinema.cinemaID
+		AND users.STATUS = '1'
+		AND users.customerID = #{customerID}
+        AND roles.roleID = users.roleID
+        AND roles.level>=50
+	</select>
+	<!-- 获取投资人下属影院列表信息 -->
+	<select id="getInvCinema" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select cinemaName,cinemaID from cinema where customerID =
+		#{customerID}
+	</select>
+	<!-- 获取投资人下属影院的角色列表信息 -->
+	<select id="getInvRole" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select roleName,roleID,roleDetail from roles where level
+		>='50'
+	</select>
+	<!-- 获取影院经理下属雇员列表信息 -->
+	<select id="getEmpUser" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT
+		customers.customerName,
+		users.userID,
+		users.email,
+		users.customerID,
+		users.userName,
+		users.mobile,
+		users. STATUS,
+		roles.roleName,
+		cinema.cinemaName
+		FROM
+		users,
+		cinema,
+		roles,
+		customers
+		WHERE
+		users.customerID = customers.customerID
+		AND users. STATUS = '1'
+		AND users.userID != #{userID}
+		AND users.roleID=roles.roleID
+        AND roles.level=60
+		AND cinema.cinemaID = (SELECT users.cinemaID FROM users WHERE userID = #{userID})
+		AND customers.customerID = #{customerID}
+	</select>
+	<!-- 获取影院经理下属影院列表信息 -->
+	<select id="getEmpCinema" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select cinemaName,cinemaID from cinema where cinemaID =
+		(select cinemaID
+		from users where userID = #{userID})
+	</select>
+	<!-- 获取投资人下属影院的角色列表信息 -->
+	<select id="getEmpRole" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT roleName,roleID,roleDetail from roles where level >
+		(select level
+		from roles where roleID = #{roleID})
+	</select>
+	<!-- 禁用用户 -->
+	<update id="forbiddenUser" parameterType="java.util.Map">
+		update users set status
+		= '0' where userID = #{userID}
+	</update>
+	<!-- 生成邀请码 -->
+	<select id="createFCode" parameterMap="inputCode" statementType="CALLABLE"
+		resultType="java.util.Map">
+		CALL createFCode(?,?,?,?,?,?)
+	</select>
+	<parameterMap type="java.util.Map" id="inputCode">
+		<parameter property="roleID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="cinemaID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="userID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="customerID" mode="IN" jdbcType="INTEGER" />
+		<parameter property="date" mode="IN" jdbcType="VARCHAR" />
+		<parameter property="fCode" mode="IN" jdbcType="VARCHAR" />
+	</parameterMap>
+</mapper>
